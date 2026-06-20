@@ -1,0 +1,33 @@
+# Cursor Rules - Contalink Invoice Portal Project
+
+This file guides the Cursor AI agent on the architecture, stack, standards, and specific constraints of this repository.
+
+## 🛠️ Stack & Architecture
+- **Backend**: Python 3.9 + FastAPI (async) + SQLAlchemy 2.0 (asyncpg) + PostgreSQL + Redis (cache) + APScheduler (cron jobs) + aiosmtplib (SMTP).
+- **Frontend**: React 19 + TypeScript + Vite + Axios + CSS Modules.
+- **Orchestration**: Root `package.json` utilizing `concurrently` to run commands.
+
+## 💻 Tech stack constraints and standards
+
+### Python / FastAPI
+- Always use `async` / `await` for database calls and service functions.
+- Use dependency injection with `Depends` to handle `AsyncSession`.
+- All endpoints must validate input schemas using Pydantic.
+- Define return models (response_model) in APIRoutes.
+
+### TypeScript / React
+- Fully type everything. Avoid using `any` at all costs.
+- Use CSS Modules (`*.module.css`) for styling. Do not use TailwindCSS.
+- Use Axios with typed responses (e.g. `axios.get<InvoiceResponse>(...)`).
+- Use React hooks for fetching and state management (`useInvoices.ts`).
+
+### Styling & Theme
+- Dark Theme SaaS dashboard design.
+- Main background color: `#090d16`.
+- Card background: translucent zinc/slate with thin borders.
+- Soft colors for status pills (Soft green for "Vigente", Soft red for "Cancelado").
+
+## 🏃 Commands Reference (Run from the root)
+- **Dev Servers**: `pnpm dev` or `npm run dev`
+- **Run Tests**: `pnpm test` or `npm run test`
+- **Run Coverage**: `pnpm test:coverage` or `npm run test:coverage`
