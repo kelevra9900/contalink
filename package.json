@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Orchestrator for Contalink Full Stack Challenge",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push || true",
     "install:all": "pnpm --prefix frontend install && (cd backend && python3 -m venv venv && venv/bin/pip install -r requirements.txt)",
     "dev:backend": "cd backend && PYTHONPATH=. venv/bin/uvicorn app.main:app --reload --port 8000",
     "dev:frontend": "pnpm --prefix frontend dev",

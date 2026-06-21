@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Hook de Git local para ejecutar pruebas antes de subir cambios al servidor remoto.
+# Detiene el push si las pruebas de frontend o backend fallan.
+
+echo "============================================="
+echo "🔍 Ejecutando pruebas locales antes de hacer push..."
+echo "============================================="
+
+# Verificar que las dependencias estén instaladas y correr los tests
+npm run test
+
+# Capturar el código de salida del comando test
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo ""
+  echo "❌ ERROR: Las pruebas fallaron. El push ha sido cancelado."
+  echo "Por favor, corrige los errores antes de intentar de nuevo."
+  echo "============================================="
+  exit 1
+fi
+
+echo ""
+echo "✅ ¡Todas las pruebas locales pasaron con éxito! Continuando con el push..."
+echo "============================================="
+exit 0
