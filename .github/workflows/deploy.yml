@@ -1,0 +1,114 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  # --- Job 1: Verificar si las credenciales de AWS están configuradas ---
+  check-deploy-secrets:
+    name: Check deployment secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_secrets: ${{ steps.check.outputs.has_secrets }}
+    steps:
+      - name: Check if AWS deployment secrets exist
+        id: check
+        run: |
+          if [ -n "${{ secrets.EC2_HOST }}" ] && \
+             [ -n "${{ secrets.EC2_USER }}" ] && \
+             [ -n "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+            echo "✅ Secrets de despliegue encontrados. Se procederá con el deploy."
+          else
+            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+            echo "⏭️ Secrets de despliegue no configurados. El deploy será omitido."
+            echo ""
+            echo "Para habilitar el despliegue automático, configura los siguientes"
+            echo "secrets en Settings → Secrets and variables → Actions:"
+            echo "  • EC2_HOST        - IP o hostname del servidor EC2"
+            echo "  • EC2_USER        - Usuario SSH (ej: ubuntu)"
+            echo "  • EC2_SSH_KEY     - Llave privada SSH para autenticación"
+            echo "  • DOCKER_ENV_FILE - Contenido del archivo .env de producción"
+          fi
+
+  # --- Job 2: Desplegar (solo si los secrets están disponibles) ---
+  deploy:
+    name: Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    needs: check-deploy-secrets
+    if: needs.check-deploy-secrets.outputs.has_secrets == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            echo "============================================="
+            echo "Iniciando despliegue en servidor EC2..."
+            echo "============================================="
+            
+            # Navegar al directorio de la aplicación
+            cd /var/www/contalink || { echo "Directorio no encontrado. Ejecuta primero setup-ec2.sh"; exit 1; }
+            
+            # Obtener cambios más recientes
+            echo "Descargando últimos cambios de Git..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Escribir variables de entorno de producción desde los secretos de GitHub
+            echo "Actualizando archivo .env de producción..."
+            echo "${{ secrets.DOCKER_ENV_FILE }}" > .env
+            
+            # Levantar contenedores y reconstruir si hubo cambios
+            echo "Levantando y reconstruyendo servicios con Docker Compose..."
+            docker compose pull
+            docker compose up --build -d
+            
+            # Limpiar imágenes huérfanas antiguas para ahorrar espacio en disco
+            echo "Limpiando imágenes Docker antiguas en desuso..."
+            docker image prune -f
+            
+            echo "============================================="
+            echo "¡Despliegue finalizado con éxito!"
+            echo "============================================="
+
+  # --- Job 3: Resumen cuando el deploy fue omitido ---
+  deploy-skipped:
+    name: Deploy skipped (no secrets)
+    runs-on: ubuntu-latest
+    needs: check-deploy-secrets
+    if: needs.check-deploy-secrets.outputs.has_secrets != 'true'
+
+    steps:
+      - name: Deployment skipped notice
+        run: |
+          echo "============================================="
+          echo "  ⏭️  DESPLIEGUE OMITIDO"
+          echo "============================================="
+          echo ""
+          echo "Los secrets de AWS no están configurados en este repositorio."
+          echo "El pipeline de CI finalizó correctamente sin desplegar."
+          echo ""
+          echo "Para habilitar despliegue automático, configura en:"
+          echo "  Settings → Secrets and variables → Actions"
+          echo ""
+          echo "Secrets requeridos:"
+          echo "  • EC2_HOST"
+          echo "  • EC2_USER"
+          echo "  • EC2_SSH_KEY"
+          echo "  • DOCKER_ENV_FILE"
+          echo "============================================="

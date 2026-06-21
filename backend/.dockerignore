@@ -1,0 +1,12 @@
+.git
+.gitignore
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+venv/
+.env
+*.pyc
+__pycache__/
+Dockerfile
+.dockerignore

@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules/
+dist/
+coverage/
+.env
+Dockerfile
+.dockerignore
+nginx.conf
+pnpm-debug.log
