@@ -28,7 +28,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-production}
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://developer:REPLACED_PASSWORD@localhost/testinvoices}
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://${DB_USER:-developer}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-testinvoices}}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://localhost:80}
       - SMTP_HOST=${SMTP_HOST}
@@ -72,7 +72,7 @@ services:
       - dev
     environment:
       - POSTGRES_USER=${DB_USER:-developer}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-REPLACED_PASSWORD}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
       - POSTGRES_DB=${DB_NAME:-testinvoices}
     volumes:
       - postgres_data:/var/lib/postgresql/data
