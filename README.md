@@ -12,88 +12,62 @@ This repository contains the full-stack codebase for the invoice consultation we
 
 ---
 
-## 🚀 Setup & Execution Guide
+## 🚀 Setup & Execution Guide (Root Orchestration)
 
-### Prerequisite Ports
-Ensure ports `8000` (FastAPI backend) and `5173` (Vite dev server) are free on your system.
+Instead of manually navigating and running commands in each folder, you can run all setups and execution commands directly from the repository root directory using the orchestrator scripts.
 
----
+### 1. Installation
+Install both frontend and backend dependencies with a single command:
+```bash
+npm run install:all
+```
+*(This command runs `pnpm install` in the frontend and creates a Python virtual environment and installs `requirements.txt` in the backend).*
 
-### 1. Backend Setup (FastAPI)
+### 2. Environment Configuration
+* **Backend**: Create a `.env` file inside the `backend/` directory:
+  ```bash
+  cp backend/.env.example backend/.env
+  ```
+  *(Fill in any custom database, cache or SMTP configurations).*
+* **Frontend**: Create a `.env` file inside the `frontend/` directory:
+  ```bash
+  echo "VITE_API_BASE_URL=http://localhost:8000" > frontend/.env
+  ```
 
-1.  Navigate into the backend directory:
-    ```bash
-    cd backend
-    ```
+### 3. Running the Application
+Launch both backend and frontend development servers concurrently:
+```bash
+npm run dev
+```
+* Access the React frontend at: [http://localhost:5173](http://localhost:5173)
+* Access the Swagger backend API docs at: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-2.  Create a virtual environment:
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-3.  Install the required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  Configure Environment Variables:
-    Create a `.env` file from the provided `.env.example`:
-    ```bash
-    cp .env.example .env
-    ```
-    Open `.env` and fill in any required details (e.g. SMTP credentials for the daily email scheduler job). The default Postgres database parameters are already pre-configured to connect to the developer test database.
-
-5.  Run the Backend Server:
-    ```bash
-    uvicorn app.main:app --reload --port 8000
-    ```
-    Once running, you can explore the fully documented interactive Swagger API documentation at:
-    [http://localhost:8000/docs](http://localhost:8000/docs)
-
----
-
-### 2. Frontend Setup (React + TS)
-
-1.  Navigate into the frontend directory:
-    ```bash
-    cd ../frontend
-    ```
-
-2.  Install packages:
-    ```bash
-    npm install
-    ```
-
-3.  Configure Environment Variables:
-    Create a `.env` file specifying the API endpoint path:
-    ```bash
-    echo "VITE_API_BASE_URL=http://localhost:8000" > .env
-    ```
-
-4.  Run Vite Development Server:
-    ```bash
-    npm run dev
-    ```
-    Access the portal directly at: [http://localhost:5173](http://localhost:5173)
+*Note: You can also run them individually using `npm run dev:frontend` or `npm run dev:backend`.*
 
 ---
 
 ## 🧪 Running Test Suites
 
-### Backend Tests
-Execute unit and integration tests from the root or the `backend/` directory:
-```bash
-# From root workspace
-PYTHONPATH=backend backend/venv/bin/pytest backend/tests/ -v
-```
+You can execute tests easily from the root workspace:
 
-### Frontend Tests
-Execute component unit tests from the `frontend/` directory:
+### Run All Tests (Frontend + Backend)
 ```bash
-# From frontend folder
 npm run test
 ```
+
+### Run All Tests with Coverage Report
+```bash
+npm run test:coverage
+```
+
+### Run Tests Individually
+* **Backend pytest**: `npm run test:backend`
+* **Frontend vitest**: `npm run test:frontend`
+
+---
+
+## 🤝 Local Git Hooks (Best Practices)
+A local Git `pre-push` hook is automatically configured during package installation. Every time you try to run `git push`, the hook will execute `npm run test`. If any test fails, the push will be safely aborted.
 
 ---
 
@@ -101,5 +75,10 @@ npm run test
 
 Pipelines are orchestrated through GitHub Actions and execute automatically on pushes or Pull Requests:
 
-*   **Backend CI Workflow** (`.github/workflows/backend-ci.yml`): Setting up Python environment, installing dependencies, and running pytest suites.
-*   **Frontend CI Workflow** (`.github/workflows/frontend-ci.yml`): Bootstrapping Node.js, running eslint linting, running vitest tests, and validating successful production compilation build.
+*   **Backend CI Workflow** (`.github/workflows/backend-ci.yml`): Sets up the Python environment, installs dependencies, and runs the pytest suite.
+*   **Frontend CI Workflow** (`.github/workflows/frontend-ci.yml`): Bootstraps Node.js, runs eslint, vitest tests, and validates production build compilation.
+*   **Continuous Deployment Workflow** (`.github/workflows/deploy.yml`):
+    1. Verifies if AWS production deployment secrets are loaded.
+    2. Runs all frontend and backend tests in parallel.
+    3. Dockerizes (builds Docker images) the frontend and backend to check image integrity.
+    4. Deploys services to the AWS EC2 instance using SSH if AWS credentials exist. If credentials do not exist, it completes the pipeline cleanly without error.
